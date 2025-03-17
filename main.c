@@ -1,18 +1,19 @@
-#include <stdio.h>
 #include <netinet/in.h>
+#include <pthread.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include "client-handler.c"
 
 int server_fd;
-int client_fd;
 int kill_process = 0;
 
 void handle_sigint() {
     kill_process = 1;
-    close(client_fd);
     close(server_fd);
 }
 
+// TODO: handle graceful thread termination
+// TODO: use select to make recv non-blocking https://stackoverflow.com/questions/17822025/how-to-cleanly-interrupt-a-thread-blocking-on-a-recv-call
 int main() {
     int PORT = 6969;
     struct sockaddr_in server_addr;
@@ -46,6 +47,7 @@ int main() {
 
     while (!kill_process) {
         // client info
+        int client_fd;
         struct sockaddr_in client_addr;
         socklen_t client_addr_len = sizeof(client_addr);
 
@@ -53,12 +55,17 @@ int main() {
         client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &client_addr_len);
         if(client_fd < 0){
             perror("[DEBUG][ERROR] accept failed\n");
-            close(client_fd);
             continue;
         }
 
         printf("[DEBUG] Connected to Client\n");
-        handle_client(client_fd, &kill_process);
+        client_opts copts = {
+            .client_fd = &client_fd,
+            .server_fd = &server_fd,
+            .kill_process = &kill_process
+        };
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, &copts);
     }
 
     printf("[DEBUG] closing gracefully\n");
