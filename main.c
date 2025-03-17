@@ -3,18 +3,27 @@
 #include <stdlib.h>
 #include "client-handler.c"
 
+int server_fd;
+int client_fd;
+int kill_process = 0;
+
+void handle_sigint() {
+    kill_process = 1;
+    close(client_fd);
+    close(server_fd);
+}
+
 int main() {
     int PORT = 6969;
-    int server_fd;
     struct sockaddr_in server_addr;
+
+    signal(SIGINT, handle_sigint);
 
     // create server socket
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         perror("[DEBUG][ERROR] socket failed\n");
         exit(EXIT_FAILURE);
     }
-
-    printf("[DEBUG] server_fd: %d\n", server_fd);
 
     // config socket
     server_addr.sin_family = AF_INET;
@@ -35,26 +44,23 @@ int main() {
 
     printf("[DEBUG] Server listening on port %d\n", PORT);
 
-    while (1) {
+    while (!kill_process) {
         // client info
         struct sockaddr_in client_addr;
         socklen_t client_addr_len = sizeof(client_addr);
-        int client_fd;
 
         // accept client connection
-        if ((client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &client_addr_len)) < 0) {
+        client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &client_addr_len);
+        if(client_fd < 0){
             perror("[DEBUG][ERROR] accept failed\n");
+            close(client_fd);
             continue;
         }
 
-        printf("[DEBUG] client_fd: %d\n", client_fd);
         printf("[DEBUG] Connected to Client\n");
-
-        handle_client(client_fd);
+        handle_client(client_fd, &kill_process);
     }
 
-    // cleanup
-    printf("[DEBUG] closing server_fd\n");
-    close(server_fd);
+    printf("[DEBUG] closing gracefully\n");
     return 0;
 }
