@@ -4,11 +4,20 @@
 #include <stdlib.h>
 #include "client-handler.c"
 
+#define MAX_CONN_ALLOWED 3
+// TODO: it doesn't connect more than three even if someone disconnects so we need to fix that.
+// the bug is when the client disconnects,
+// apart from closing client_fd we need to make the client_fds[j] to -1 as well
+
+int client_fds[MAX_CONN_ALLOWED] = {-1, -1, -1};
 int server_fd;
 int kill_process = 0;
 
 void handle_sigint() {
     kill_process = 1;
+    for(int j=0; j<MAX_CONN_ALLOWED; j++){
+        close(client_fds[j]);
+    }
     close(server_fd);
 }
 
@@ -46,8 +55,8 @@ int main() {
     printf("[DEBUG] Server listening on port %d\n", PORT);
 
     while (!kill_process) {
-        // client info
         int client_fd;
+        // client info
         struct sockaddr_in client_addr;
         socklen_t client_addr_len = sizeof(client_addr);
 
@@ -56,12 +65,22 @@ int main() {
         if(client_fd < 0){
             perror("[DEBUG][ERROR] accept failed\n");
             continue;
+        } else {
+            printf("[DEBUG] getting here");
+            int i = 0;
+            for(int j=0; j<MAX_CONN_ALLOWED; j++){
+                if(client_fds[j] == -1){
+                    client_fds[j] = client_fd;
+                    break;
+                }
+                i = j+1;
+            }
+            if(i == MAX_CONN_ALLOWED) continue;
         }
 
         printf("[DEBUG] Connected to Client\n");
         client_opts copts = {
-            .client_fd = &client_fd,
-            .server_fd = &server_fd,
+            .client_fd = client_fd,
             .kill_process = &kill_process
         };
         pthread_t thread_id;
