@@ -17,6 +17,7 @@ void handle_sigint() {
     kill_process = 1;
     for(int j=0; j<MAX_CONN_ALLOWED; j++){
         close(client_fds[j]);
+        client_fds[j] = -1;
     }
     close(server_fd);
 }
@@ -55,6 +56,7 @@ int main() {
     printf("[DEBUG] Server listening on port %d\n", PORT);
 
     while (!kill_process) {
+        int* client_fd_ref;
         int client_fd;
         // client info
         struct sockaddr_in client_addr;
@@ -66,11 +68,11 @@ int main() {
             perror("[DEBUG][ERROR] accept failed\n");
             continue;
         } else {
-            printf("[DEBUG] getting here");
             int i = 0;
             for(int j=0; j<MAX_CONN_ALLOWED; j++){
                 if(client_fds[j] == -1){
                     client_fds[j] = client_fd;
+                    client_fd_ref = &client_fds[j];
                     break;
                 }
                 i = j+1;
@@ -80,6 +82,7 @@ int main() {
 
         printf("[DEBUG] Connected to Client\n");
         client_opts copts = {
+            .client_fd_ref = client_fd_ref,
             .client_fd = client_fd,
             .kill_process = &kill_process
         };
