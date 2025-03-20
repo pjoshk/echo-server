@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "client-handler.c"
+#include <signal.h>
 
 #define MAX_CONN_ALLOWED 3
 // TODO: it doesn't connect more than three even if someone disconnects so we need to fix that.
