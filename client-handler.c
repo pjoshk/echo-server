@@ -6,6 +6,8 @@
 #define BUFFER_SIZE 104857600
 
 typedef struct client_opts {
+  int* all_clients;
+  int total_clients;
   int* client_fd_ref;
   int client_fd;
   int* kill_process;
@@ -14,6 +16,7 @@ typedef struct client_opts {
 void* handle_client(void* opts) {
     client_opts* copts = (struct client_opts*)opts; 
     char buffer[1024];
+    char resBuf[1024];
     size_t bytes_received = 1;
     int* client_fd_ref = copts->client_fd_ref;
     int client_fd = copts->client_fd;
@@ -27,7 +30,15 @@ void* handle_client(void* opts) {
         }
 
         buffer[bytes_received] = '\0';
-        printf("%s", buffer);
+        printf("%d: %s", client_fd, buffer);
+
+        int resBufSize = sprintf(resBuf, "%d: %s\n", client_fd, buffer);
+
+        for(int i=0; i<copts->total_clients; i++){
+            if(copts->all_clients[i] > 0 && copts->all_clients[i] != client_fd){
+                write(copts->all_clients[i], resBuf, resBufSize);
+            }
+        }
     }
 
     // cleanup
