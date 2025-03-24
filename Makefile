@@ -1,2 +1,2 @@
 main:
-	gcc main.c -o bin && bin
+	gcc main.c -o bin && ./bin
