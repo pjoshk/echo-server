@@ -33,10 +33,10 @@ void* handle_client(void* opts) {
     // cleanup
     printf("[DEBUG] client disconnected\n");
     if(client_fd){
-        // update the client_fds[j] whereever it is
         close(client_fd);
         *client_fd_ref = -1;
     }
 
+    printf("[DEBUG] closing the client thread gracefully\n");
     return NULL;
 }
