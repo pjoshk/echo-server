@@ -6,9 +6,9 @@
 #include <signal.h>
 
 #define MAX_CONN_ALLOWED 3
-// TODO: it doesn't connect more than three even if someone disconnects so we need to fix that.
-// the bug is when the client disconnects,
-// apart from closing client_fd we need to make the client_fds[j] to -1 as well
+
+// TODO: can we make the usage of threads more efficient?
+// Each connection spaws a dedicated thread, there must be a better way to utilise them
 
 int client_fds[MAX_CONN_ALLOWED] = { [0 ... (MAX_CONN_ALLOWED-1)] = -1 };
 int server_fd;
@@ -25,7 +25,13 @@ void handle_sigint() {
 
 int main() {
     int PORT = 6969;
-    struct sockaddr_in server_addr;
+
+    // config socket
+    struct sockaddr_in server_addr = {
+        .sin_family = AF_INET,
+        .sin_addr.s_addr = INADDR_ANY,
+        .sin_port = htons(PORT)
+    };
 
     // intercept user trying to close the server by pressing ^C
     signal(SIGINT, handle_sigint);
@@ -35,11 +41,6 @@ int main() {
         perror("[DEBUG][ERROR] socket failed\n");
         exit(EXIT_FAILURE);
     }
-
-    // config socket
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(PORT);
 
     // bind socket to port
     if (bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
