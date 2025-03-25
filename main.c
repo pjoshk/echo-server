@@ -99,6 +99,8 @@ int main() {
         // offload the client connection to a thread
         // --------------------------------------------
         client_opts copts = {
+            .all_clients = client_fds,
+            .total_clients = MAX_CONN_ALLOWED,
             .client_fd_ref = client_fd_ref,
             .client_fd = client_fd,
             .kill_process = &kill_process
